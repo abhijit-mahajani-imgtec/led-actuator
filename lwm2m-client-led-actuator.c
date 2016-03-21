@@ -169,7 +169,7 @@ PROCESS_THREAD(lwm2m_client, ev, data)
 
 	PROCESS_PAUSE();
 
-	Lwm2m_Info("Starting LWM2M Client for flow_led_actuator\n");
+	Lwm2m_Info("Starting LWM2M Client for lwm2m-client-led-actuator\n");
 
 #ifdef RF_CHANNEL
 	Lwm2m_Info("RF channel: %u\n", RF_CHANNEL);

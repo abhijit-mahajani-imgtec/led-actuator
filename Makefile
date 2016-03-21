@@ -1,6 +1,6 @@
 PACKAGES_DIR=../../packages
 LWM2M_DIR=$(PACKAGES_DIR)/AwaLWM2M
-CONTIKI_PROJECT=lwm2m-client-contiki-led
+CONTIKI_PROJECT=lwm2m-client-led-actuator
 VERSION?=$(shell git describe --abbrev=4 --dirty --always --tags)
 CONTIKI=../../constrained-os/contiki
 CONTIKI_WITH_IPV6 = 1
