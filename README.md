@@ -1,2 +1,2 @@
-# flow_led_actuator
-flow led actuator application
+# led_actuator
+Mikro-E 6loWPAN Clicker based led actuator application
