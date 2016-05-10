@@ -44,19 +44,12 @@
 #include "contiki-net.h"
 
 #include "dev/leds.h"
-#include "button-sensor.h"
 
-#include "lwm2m_core.h"
-#include "lwm2m_object_store.h"
-#include "coap_abstraction.h"
-#include "client/lwm2m_bootstrap.h"
-#include "client/lwm2m_registration.h"
-#include "client/lwm2m_device_object.h"
-#include "client/lwm2m_security_object.h"
-#include "client/lwm2m_server_object.h"
+#include "awa/static.h"
 
 #include "lwm2m-client-flow-object.h"
 #include "lwm2m-client-flow-access-object.h"
+#include "lwm2m-client-device-object.h"
 #include "lwm2m-client-ipso-light-control.h"
 
 /***************************************************************************************************
@@ -64,10 +57,10 @@
  **************************************************************************************************/
 
 //! \{
-#define COAP_PORT			(6000)
-#define IPC_PORT			(12345)
-#define BOOTSTRAP_PORT		"15683"
-#define END_POINT_NAME		"LedDevice"
+#define COAP_PORT             (6000)
+#define IPC_PORT              (12345)
+#define BOOTSTRAP_PORT        "15683"
+#define END_POINT_NAME        "LedDevice"
 //! \}
 
 /***************************************************************************************************
@@ -79,13 +72,13 @@
  */
 typedef struct
 {
-	//! \{
-	int CoapPort;
-	int IpcPort;
-	bool Verbose;
-	char * EndPointName;
-	char * BootStrap;
-	//! \}
+    //! \{
+    int CoapPort;
+    int IpcPort;
+    bool Verbose;
+    char * EndPointName;
+    char * BootStrap;
+    //! \}
 } Options;
 
 /***************************************************************************************************
@@ -98,66 +91,54 @@ static const unsigned char _LED2 = LEDS_GREEN;
 
 Options options =
 {
-	.CoapPort = COAP_PORT,
-	.IpcPort = IPC_PORT,
-	.Verbose = true,
-	.BootStrap = "coap://["BOOTSTRAP_IPv6_ADDR"]:"BOOTSTRAP_PORT"/",
-	.EndPointName = END_POINT_NAME,
+    .CoapPort = COAP_PORT,
+    .IpcPort = IPC_PORT,
+    .Verbose = true,
+    .BootStrap = "coap://["BOOTSTRAP_IPv6_ADDR"]:"BOOTSTRAP_PORT"/",
+    .EndPointName = END_POINT_NAME,
 };
 
 /***************************************************************************************************
  * Implementation
  **************************************************************************************************/
 
-void LED_callback(void * context, bool OnOff, unsigned char Dimmer, const char * Colour)
+void LED_callback(void *context, bool OnOff, unsigned char Dimmer, const char *Colour)
 {
-	unsigned char led = *((unsigned char *)context);
+    unsigned char led = *((unsigned char *)context);
 
-	if(led == _LED1 || led == _LED2)
-	{
-		Lwm2m_Debug("Setting LED %d state to %s\n", led == _LED1 ? 1 : 2, OnOff ? "on" : "off");
+    if(led == _LED1 || led == _LED2)
+    {
+        printf("Setting LED %d state to %s\n", led == _LED1 ? 1 : 2, OnOff ? "on" : "off");
 
-		if(OnOff)
-			leds_on(led);
-		else
-			leds_off(led);
-	}
+        if(OnOff)
+            leds_on(led);
+        else
+            leds_off(led);
+    }
 }
 
-void ConstructObjectTree(Lwm2mContextType * context)
+
+
+void ConstructObjectTree(AwaStaticClient *client)
 {
-	Lwm2m_Debug("Construct object tree\n");
-
-	Lwm2m_RegisterSecurityObject(context);
-	if (options.BootStrap != NULL)
-	{
-		Lwm2m_PopulateSecurityObject(context, options.BootStrap);
-	}
-	Lwm2m_RegisterServerObject(context);
-	Lwm2m_RegisterDeviceObject(context);
-
-	Lwm2m_RegisterFlowObject(context);
-	Lwm2m_RegisterFlowAccessObject(context);
-
-	LightControl_RegisterLightControlObject(context);
-	LightControl_AddLightControl(context, 0, LED_callback, (void*)&_LED1);
-	LightControl_AddLightControl(context, 1, LED_callback, (void*)&_LED2);
+    DefineDeviceObject(client);
+    DefineFlowObject(client);
+    DefineFlowAccessObject(client);
+    DefineLightControlObject(client);
+    LightControl_AddLightControl(client, 0, LED_callback, (void*)&_LED1);
+    LightControl_AddLightControl(client, 1, LED_callback, (void*)&_LED2);
 }
 
-Lwm2mContextType * Lwm2mClient_Start()
+void AwaStaticClient_Start(AwaStaticClient *client)
 {
-	Lwm2m_SetOutput(stdout);
-	Lwm2m_SetLogLevel((options.Verbose) ? DebugLevel_Debug : DebugLevel_Info);
-	Lwm2m_PrintBanner();
-	Lwm2m_Info("LWM2M client - CoAP port %d\n", options.CoapPort);
-	Lwm2m_Info("LWM2M client - IPC port %d\n", options.IpcPort);
-
-	CoapInfo * coap = coap_Init("0.0.0.0", options.CoapPort,
-		(options.Verbose) ? DebugLevel_Debug : DebugLevel_Info);
-	Lwm2mContextType * context = Lwm2mCore_Init(coap, options.EndPointName);
-	ConstructObjectTree(context);
-
-	return context;
+    AwaStaticClient_SetLogLevel((options.Verbose) ? AwaLogLevel_Debug : AwaLogLevel_Warning);
+    printf("LWM2M client - CoAP port %d\n", options.CoapPort);
+    printf("LWM2M client - IPC port %d\n", options.IpcPort);
+    AwaStaticClient_SetEndPointName(client, options.EndPointName);
+    AwaStaticClient_SetCoAPListenAddressPort(client, "0.0.0.0", options.CoapPort);
+    AwaStaticClient_SetBootstrapServerURI(client, options.BootStrap);
+    AwaStaticClient_Init(client);
+    ConstructObjectTree(client);
 }
 
 PROCESS(lwm2m_client, "LwM2M Client");
@@ -165,51 +146,51 @@ AUTOSTART_PROCESSES(&lwm2m_client);
 
 PROCESS_THREAD(lwm2m_client, ev, data)
 {
-	PROCESS_BEGIN();
+    PROCESS_BEGIN();
 
-	PROCESS_PAUSE();
+    PROCESS_PAUSE();
 
-	Lwm2m_Info("Starting LWM2M Client for lwm2m-client-led-actuator\n");
+    printf("Starting LWM2M Client for lwm2m-client-led-actuator\n");
 
 #ifdef RF_CHANNEL
-	Lwm2m_Info("RF channel: %u\n", RF_CHANNEL);
+    printf("RF channel: %u\n", RF_CHANNEL);
 #endif
 #ifdef IEEE802154_PANID
-	Lwm2m_Info("PAN ID: 0x%04X\n", IEEE802154_PANID);
+    printf("PAN ID: 0x%04X\n", IEEE802154_PANID);
 #endif
 
-	Lwm2m_Info("uIP buffer: %u\n", UIP_BUFSIZE);
-	Lwm2m_Info("LL header: %u\n", UIP_LLH_LEN);
-	Lwm2m_Info("IP+UDP header: %u\n", UIP_IPUDPH_LEN);
+    printf("uIP buffer: %u\n", UIP_BUFSIZE);
+    printf("LL header: %u\n", UIP_LLH_LEN);
+    printf("IP+UDP header: %u\n", UIP_IPUDPH_LEN);
 #ifdef REST_MAX_CHUNK_SIZE
-	Lwm2m_Info("REST max chunk: %u\n", REST_MAX_CHUNK_SIZE);
+    printf("REST max chunk: %u\n", REST_MAX_CHUNK_SIZE);
 #endif
 
-	uip_ipaddr_t ipaddr;
-	uip_ip6addr(&ipaddr, BOOTSTRAP_IPv6_ADDR1, BOOTSTRAP_IPv6_ADDR2, BOOTSTRAP_IPv6_ADDR3,
-		BOOTSTRAP_IPv6_ADDR4, BOOTSTRAP_IPv6_ADDR5, BOOTSTRAP_IPv6_ADDR6, BOOTSTRAP_IPv6_ADDR7,
-		BOOTSTRAP_IPv6_ADDR8);
-	uip_ds6_defrt_add(&ipaddr, 0);
+    uip_ipaddr_t ipaddr;
+    uip_ip6addr(&ipaddr, BOOTSTRAP_IPv6_ADDR1, BOOTSTRAP_IPv6_ADDR2, BOOTSTRAP_IPv6_ADDR3,
+        BOOTSTRAP_IPv6_ADDR4, BOOTSTRAP_IPv6_ADDR5, BOOTSTRAP_IPv6_ADDR6, BOOTSTRAP_IPv6_ADDR7,
+        BOOTSTRAP_IPv6_ADDR8);
+    uip_ds6_defrt_add(&ipaddr, 0);
 
-	static Lwm2mContextType * context;
+    static AwaStaticClient *client;
+    client = AwaStaticClient_New();
+    AwaStaticClient_Start(client);
 
-	context = Lwm2mClient_Start();
+    /* Define application-specific events here. */
+    while(1)
+    {
+        static struct etimer et;
+        static int WaitTime;
+        WaitTime = AwaStaticClient_Process(client);
+        etimer_set(&et, (WaitTime * CLOCK_SECOND) / 1000);
+        PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et));
 
-	/* Define application-specific events here. */
-	while(1)
-	{
-		static struct etimer et;
-		static int WaitTime;
-		WaitTime = Lwm2mCore_Process(context);
-		etimer_set(&et, (WaitTime * CLOCK_SECOND) / 1000);
-		PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&et) || (ev == sensors_event));
+        //FIXME: this is crude but is a proof of concept for incrementing On Time for
+        //IPSO light control
+        LightControl_IncrementOnTime(client, 0, 1);
+        LightControl_IncrementOnTime(client, 1, 1);
+    }
 
-		//FIXME: this is crude but is a proof of concept for incrementing On Time for
-		//IPSO light control
-		LightControl_IncrementOnTime(context, 0, 1);
-		LightControl_IncrementOnTime(context, 1, 1);
-	}
-
-	PROCESS_END();
+    PROCESS_END();
 }
 //! \}
