@@ -12,9 +12,10 @@ $ cd led-actuator
 $ make TARGET=mikro-e USE_CC2520=1
 ```
 
-To build for Cascoda CA8210 6lowpan driver
+To build with Cascoda CA8210 6lowpan driver
 ```
 $ cd led-actuator
 $ make TARGET=mikro-e USE_CA8210=1
+```
 
 This will generate hex file which can be flashed onto the MikroE clicker.
