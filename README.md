@@ -6,14 +6,15 @@ How To Compile
 
 Assuming you have creator-contiki source code with directories constrained-os, packages/led-actuator, packages/libobjects and packages/AwaLWM2M
 
+To build with TI CC2520 6lowpan driver
 ```
 $ cd led-actuator
-$ make TARGET=mikro-e
+$ make TARGET=mikro-e USE_CC2520=1
 ```
 
-This will generate hex file which can be flashed onto the MikroE clicker.
+To build for Cascoda CA8210 6lowpan driver
+```
+$ cd led-actuator
+$ make TARGET=mikro-e USE_CA8210=1
 
-## Revision History
-| Revision  | Changes from previous revision |
-| :----     | :------------------------------|
-| 0.9.0     | External Beta Trial Release    | 
+This will generate hex file which can be flashed onto the MikroE clicker.
